@@ -9,12 +9,18 @@ function Prom(exec) {
 }
 
 Prom.prototype.resolve = function(val) {
+    if (this.status !== Prom.statusTypes.PENDING) {
+        return;
+    }
     this.value = val;
     this.status = Prom.statusTypes.RESOLVED;
     this._runQueue();
 };
 
 Prom.prototype.reject = function(reason) {
+    if (this.status !== Prom.statusTypes.PENDING) {
+        return;
+    }
     this.value = reason;
     this.status = Prom.statusTypes.REJECTED;
     this.catcher(reason);
