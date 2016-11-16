@@ -25,19 +25,20 @@ Prom.prototype.reject = function(reason) {
 };
 
 Prom.prototype._runQueue = function() {
-    if (this.status !== Prom.statusTypes.PENDING) {
-        if (this.value && typeof this.value.then === 'function') {
-            while (this.yayQueue.length || this.nayQueue.length) {
-                this.value.then(this.yayQueue.shift(), this.nayQueue.shift());
-            }
+    if (this.status === Prom.statusTypes.PENDING) {
+        return;
+    }
+    if (this.value && typeof this.value.then === 'function') {
+        if (this.status === Prom.statusTypes.RESOLVED) {
+            while (this.yayQueue.length) { this.value.then(this.yayQueue.shift()); }
             return;
         }
-        var q = this.status === Prom.statusTypes.RESOLVED ? this.yayQueue : this.nayQueue;
-        while (q.length) {
-            var fn = q.shift();
-            var val = this.value;
-            setTimeout((function(fn, val){ return function(){ fn(val); } })(fn, val), 0);
-        }
+    }
+    var q = this.status === Prom.statusTypes.RESOLVED ? this.yayQueue : this.nayQueue;
+    while (q.length) {
+        var fn = q.shift();
+        var val = this.value;
+        setTimeout((function(fn, val){ return function(){ fn(val); } })(fn, val), 0);
     }
 }
 
