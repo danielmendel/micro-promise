@@ -1,9 +1,6 @@
 function Prom(exec) {
     this.status = Prom.statusTypes.PENDING;
     this.value = undefined;
-    this.catcher = function(err){
-        // console.error("(in promise) " + err);
-    };
     this.yayQueue = [];
     this.nayQueue = [];
     exec && exec(this.resolve.bind(this), this.reject.bind(this));
@@ -24,41 +21,48 @@ Prom.prototype.reject = function(reason) {
     }
     this.value = reason;
     this.status = Prom.statusTypes.REJECTED;
-    this.catcher(reason);
+    this._runQueue();
 };
 
 Prom.prototype._runQueue = function() {
     if (this.status !== Prom.statusTypes.PENDING) {
+        if (this.value && typeof this.value.then === 'function') {
+            while (this.yayQueue.length || this.nayQueue.length) {
+                this.value.then(this.yayQueue.shift(), this.nayQueue.shift());
+            }
+            return;
+        }
         var q = this.status === Prom.statusTypes.RESOLVED ? this.yayQueue : this.nayQueue;
         while (q.length) {
-            if (this.value instanceof Prom) {
-                this.value.then(q.shift()).catch(this.catcher);
-            } else {
-                var fn = q.shift();
-                var val = this.value;
-                setTimeout((function(fn, val){ return function(){ fn(val); } })(fn, val), 0);
-            }
+            var fn = q.shift();
+            var val = this.value;
+            setTimeout((function(fn, val){ return function(){ fn(val); } })(fn, val), 0);
         }
     }
 }
 
 Prom.prototype.then = function(yayFn, nayFn) {
     var prom = new Prom();
-    typeof yayFn === 'function' && this.yayQueue.push(function(val) { return prom.resolve(yayFn(val)); });
-    typeof nayFn === 'function' && this.nayQueue.push(function(val) { return prom.reject(nayFn(val)); });
-    this.catcher = function (err){ prom.catcher(err); }
+    this.yayQueue.push(function(val) {
+        try {
+            prom.resolve(typeof yayFn === 'function' ? yayFn(val) : val);
+        } catch(e) {
+            prom.reject(e);
+        }
+    });
+    this.nayQueue.push(function(val) {
+        try {
+            if (typeof nayFn === 'function') {
+                prom.resolve(nayFn(val));
+            } else {
+                prom.reject(val);
+            }
+        } catch (e) {
+            prom.reject(e);
+        }
+    });
     this._runQueue();
-    if (this.status !== Prom.statusTypes.PENDING) {
-        prom[this.status === Prom.statusTypes.REJECTED ? 'reject' : 'resolve'](this.value);
-    }
     return prom;
-};
-
-Prom.prototype.catch = function(fn) {
-    this.catcher = fn;
-    if (this.status === Prom.statusTypes.REJECTED) {
-        this.catcher(this.value);
-    }
 };
 
 Prom.statusTypes = Object.freeze({
