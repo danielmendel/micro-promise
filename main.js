@@ -10,6 +10,10 @@ Prom.prototype.resolve = function(val) {
     if (this.status !== Prom.statusTypes.PENDING) {
         return;
     }
+    if (this === val) {
+        this.reject(new TypeError("Promise cannot be resolved with itself"));
+        return;
+    }
     this.value = val;
     this.status = Prom.statusTypes.RESOLVED;
     this._runQueue();
@@ -17,6 +21,10 @@ Prom.prototype.resolve = function(val) {
 
 Prom.prototype.reject = function(reason) {
     if (this.status !== Prom.statusTypes.PENDING) {
+        return;
+    }
+    if (this === reason) {
+        this.reject(new TypeError("Promise cannot be rejected with itself"));
         return;
     }
     this.value = reason;
@@ -30,7 +38,7 @@ Prom.prototype._runQueue = function() {
     }
     if (this.value && typeof this.value.then === 'function') {
         if (this.status === Prom.statusTypes.RESOLVED) {
-            while (this.yayQueue.length) { this.value.then(this.yayQueue.shift()); }
+            while (this.yayQueue.length) { this.value.then(this.yayQueue.shift(), this.nayQueue.shift()); }
             return;
         }
     }
