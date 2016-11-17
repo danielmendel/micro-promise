@@ -36,9 +36,14 @@ Prom.prototype._runQueue = function() {
     if (this.status === Prom.statusTypes.PENDING) {
         return;
     }
-    if (this.value && typeof this.value.then === 'function') {
-        if (this.status === Prom.statusTypes.RESOLVED) {
-            while (this.yayQueue.length) { this.value.then(this.yayQueue.shift(), this.nayQueue.shift()); }
+    if (this.value) {
+        try {
+            var then = this.value.then;
+        } catch (e) {
+            this.reject(e);
+        }
+        if (typeof then === 'function' && this.status === Prom.statusTypes.RESOLVED) {
+            while (this.yayQueue.length) { then.call(this.value, this.yayQueue.shift(), this.nayQueue.shift()); }
             return;
         }
     }
