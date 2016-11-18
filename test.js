@@ -1,5 +1,5 @@
 var test = require('promises-aplus-tests');
-var Prom = require('./main');
+var Prom = require('./take2');
 
 adapter = {
     resolved: function(value) {
