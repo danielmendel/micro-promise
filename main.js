@@ -1,104 +1,119 @@
-function Prom(exec) {
-    this.status = Prom.statusTypes.PENDING;
-    this.value = undefined;
-    this.yayQueue = [];
-    this.nayQueue = [];
-    exec && exec(this.resolve.bind(this), this.reject.bind(this));
+// 2.1
+var PENDING = ["PENDING"];
+var FULFILLED = ["FULFILLED"];
+var REJECTED = ["REJECTED"];
+
+function isFunc(v){
+    return typeof v === 'function';
 }
 
+function Prom() {
+    this.state = PENDING;
+    this.value = undefined;
+    this.deferred = [];
+}
+
+// 2.3
 Prom.prototype.resolve = function(val) {
-    if (this.status !== Prom.statusTypes.PENDING) {
+    // 2.1.2
+    if (this.state !== PENDING) {
         return;
     }
+    // 2.3.1
     if (this === val) {
         this.reject(new TypeError("Promise cannot be resolved with itself"));
         return;
     }
-    this.value = val;
-    this.status = Prom.statusTypes.RESOLVED;
-    this._runQueue();
-};
-
-Prom.prototype.reject = function(reason) {
-    if (this.status !== Prom.statusTypes.PENDING) {
-        return;
-    }
-    if (this === reason) {
-        this.reject(new TypeError("Promise cannot be rejected with itself"));
-        return;
-    }
-    this.value = reason;
-    this.status = Prom.statusTypes.REJECTED;
-    this._runQueue();
-};
-
-Prom.prototype._runQueue = function() {
-    if (this.status === Prom.statusTypes.PENDING) {
-        return;
-    }
-    if (this.value) {
+    // 2.3.3
+    if (val !== null && (typeof val === 'object' || isFunc(val))) {
+        // 2.3.3.2
         try {
-            var then = this.value.then;
+            // 2.3.3.1
+            var then = val.then;
         } catch (e) {
             this.reject(e);
+            return;
         }
-        if (typeof then === 'function' && this.status === Prom.statusTypes.RESOLVED) {
-            while (this.yayQueue.length) { then.call(this.value, this.yayQueue.shift(), this.nayQueue.shift()); }
+        // 2.3.3.3
+        if (isFunc(then)) {
+            // 2.3.3.3.4
+            try {
+                // 2.3.3.3.3
+                var called = false;
+                function gatedExec(fn) {
+                    return function(v){
+                        if (called) return;
+                        called = true;
+                        fn(v);
+                    }
+                }
+                // 2.3.2, 2.3.3.3
+                then.call(val, gatedExec(this.resolve.bind(this)), gatedExec(this.reject.bind(this)));
+            } catch (e) {
+                // 2.3.3.3.4.1
+                if (!called) {
+                    this.reject(e);
+                }
+            }
             return;
         }
     }
-    var q = this.status === Prom.statusTypes.RESOLVED ? this.yayQueue : this.nayQueue;
-    while (q.length) {
-        var fn = q.shift();
-        var val = this.value;
-        setTimeout((function(fn, val){ return function(){ fn(val); } })(fn, val), 0);
-    }
+    // 2.3.4, 2.1.2.2
+    this.value = val;
+    this.state = FULFILLED;
+    // 2.2.4
+    setTimeout(Deferred.exec.bind(this), 0);
 }
 
-Prom.prototype.then = function(yayFn, nayFn) {
-    var prom = new Prom();
-    this.yayQueue.push(function(val) {
+// 2.1 & 2.3
+Prom.prototype.reject = function(reason) {
+    // 2.1.3.1
+    if (this.state !== PENDING) {
+        return;
+    }
+    // 2.1.3.2
+    this.value = reason;
+    this.state = REJECTED;
+    // 2.2.4
+    setTimeout(Deferred.exec.bind(this), 0);
+}
+// 2.2
+Prom.prototype.then = function(yes, no) {
+    // 2.2.1
+    yes = isFunc(yes) ? yes : null;
+    no = isFunc(no) ? no : null;
+    // 2.2.6
+    var deferred = new Deferred(yes, no);
+    this.deferred.push(deferred);
+    if (this.state !== PENDING) {
+        setTimeout(Deferred.exec.bind(this), 0);
+    }
+    // 2.2.7
+    return deferred.next;
+}
+
+function Deferred(yes, no) {
+    // 2.2.7.3
+    this.yes = yes || function(v){ this.next.resolve(v); }.bind(this);
+    // 2.2.7.4
+    this.no = no || function(r){ this.next.reject(r); }.bind(this);
+    this.next = new Prom();
+}
+
+// 2.2.2, 2.2.3
+Deferred.exec = function() {
+    while (this.deferred.length) {
+        var d = this.deferred.shift();
+        var method = this.state === FULFILLED ? d.yes : d.no;
+        // 2.2.7.2
         try {
-            prom.resolve(typeof yayFn === 'function' ? yayFn(val) : val);
-        } catch(e) {
-            prom.reject(e);
-        }
-    });
-    this.nayQueue.push(function(val) {
-        try {
-            if (typeof nayFn === 'function') {
-                prom.resolve(nayFn(val));
-            } else {
-                prom.reject(val);
-            }
+            var val = method(this.value);
         } catch (e) {
-            prom.reject(e);
+            d.next.reject(e);
+            continue;
         }
-    });
-    this._runQueue();
-    return prom;
-};
-
-Prom.statusTypes = Object.freeze({
-    PENDING: "pending",
-    RESOLVED: "resolved",
-    REJECTED: "rejected"
-});
-
-Prom.all = function(iter) {
-    var vals = [];
-    var p = new Prom();
-    iter.forEach(function(prom) {
-        prom.then(function(v) {
-            vals.push(v);
-            if (vals.length === iter.length) {
-                p.resolve(vals);
-            }
-        }).catch(function(reason){
-            p.reject(reason);
-        });
-    });
-    return p;
+        d.next.resolve(val);
+    }
 }
 
 module.exports = Prom;
