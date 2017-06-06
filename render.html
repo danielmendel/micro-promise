@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+    <title>Hi</title>
+    <style>
+        html, body {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script src="gridviz.js"></script>
+    <!--
+    <script src="toposort.js"></script>
+    <script>
+        var data = [
+            { id: 0 },
+            { id: 1 },
+            { id: 2 },
+            { id: 3 },
+            { id: 4 },
+            { id: 5 },
+            { id: 6 },
+            { id: 7 },
+        ];
+
+        var edges = [
+            { a: 0, b: 1 },
+            { a: 2, b: 4 },
+            { a: 2, b: 6 },
+            { a: 3, b: 5 },
+            { a: 5, b: 6 },
+        ];
+
+        var $canvas = window.canvas;
+        var ctx = $canvas.getContext('2d');
+        var width = document.body.clientWidth;
+        var height = document.body.clientHeight;
+        $canvas.width = width;
+        $canvas.height = height;
+
+        var nodes = {};
+        var rows = toposort(data, edges).reduce((p, c, i) => {
+            if (i === 0 || i === 1 || i === 3 || i === 6 || i === 10) {
+                p.push([]);
+            }
+            p[p.length-1].push(c);
+            return p;
+        }, []);
+        console.log(rows);
+        rows.forEach(function(row, i) {
+            var y = (i+1) * 50;
+            var x = width / (row.length+1);
+            row.forEach(function(n, i) {
+                ctx.beginPath();
+                n.x = x * (i+1);
+                n.y = y;
+                nodes[n.id] = n;
+                ctx.arc(n.x, n.y, 20, 0, 360);
+                ctx.fill();
+                ctx.closePath();
+            });
+        });
+
+        edges.forEach(function(e) {
+            drawArrow(nodes[e.a].x, nodes[e.a].y, nodes[e.b].x, nodes[e.b].y);
+        });
+
+        function drawArrow(fromx, fromy, tox, toy){
+            //variables to be used when creating the arrow
+            var headlen = 5;
+
+            var angle = Math.atan2(toy-fromy,tox-fromx);
+
+            //starting path of the arrow from the start square to the end square and drawing the stroke
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineWidth = 2;
+            ctx.stroke(); 
+            //starting a new path from the head of the arrow to one of the sides of the point
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+
+            //path from the side point of the arrow, to the other side point
+            ctx.lineTo(tox-headlen*Math.cos(angle+Math.PI/7),toy-headlen*Math.sin(angle+Math.PI/7));
+
+            //path from the side point back to the tip of the arrow, and then again to the opposite side point
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+
+            //draws the paths created above
+            ctx.lineWidth = 10;
+            ctx.stroke();
+            ctx.fill();
+        }
+    </script>
+    -->
+</body>
+</html>
