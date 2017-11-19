@@ -5,7 +5,7 @@ I wrote this to try and thoroughly understand the [Promises/A+ specification](ht
 
 The specification is delightfully brief, precise, and includes an extremely comprehensive test suite — this is the yardstick against which I make the claim of compliance. Many many thanks and kudos to the contributors there.
 
-If you're looking for a Promises library to *use* — then please see the [ES6-promise](https://github.com/stefanpenner/es6-promise) polyfill, and then stop using it once ES6 compatibility is sufficient for your users.
+If you're looking for a Promises library to *use* — then I reccomend the [ES6-promise](https://github.com/stefanpenner/es6-promise) polyfill, and also recommend dropping it once ES6 compatibility in browsers is satisfactory for your use case.
 
 to be entirely clear:
 
