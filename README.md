@@ -9,5 +9,7 @@ If you're looking for a Promises library to *use* — then I reccomend the [ES6
 
 to be entirely clear:
 
-# :rotating_light: EDUCATIONAL PURPOSES ONLY :rotating_light: 
-Other use not endorsed or supported — repeat **DO NOT USE**.
+# :rotating_light: UNSUPPORTED SOFTWARE :rotating_light: 
+Released for educational purposes, other use not endorsed or supported. 
+
+If you are learning about how promises work and have questions about this toy implementation, open an issue and I'll be happy to answer them.
